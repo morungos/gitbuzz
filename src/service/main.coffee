@@ -25,18 +25,18 @@ nconf
   .file('global', "/etc/default/gitbuzz")
 
 nconf.defaults
-  'password:salt': '',
-  'data:datadb': "mongodb://localhost:27017/gitbuzz",
-  'data:sessiondb': "mongodb://localhost:27017/session",
-  'server:port': 3001,
-  'server:address': "0.0.0.0",
-  'debug': true,
-  'authenticate': false,
-  'baseUrl': 'http://localhost:3000',
-  'apikey': 'garblemonkey',
-  'cookieSecret': 'keyboard cat',
-  'serveStatics': false,
+  'password:salt': ''
+  'data:datadb': "mongodb://localhost:27017/gitbuzz"
+  'server:port': 3001
+  'server:address': "0.0.0.0"
+  'debug': true
+  'authenticate': false
+  'baseUrl': 'http://localhost:3000'
+  'apikey': 'garblemonkey'
+  'cookieSecret': 'keyboard cat'
+  'serveStatics': false
   'serveIndex': false
+  'schedule:cron': '* * * * *'
 
 config = nconf.get()
 
@@ -64,5 +64,11 @@ if config['serveIndex']
       res.setHeader 'Cache-Control', 'public, max-age=0'
     res.sendfile(file)
 
+logger.info("Initializing scheduled tasks");
+scheduler = require("./scheduler")
+scheduler.initializeScheduler () ->
+  logger.info("Running background task")
+
 app.listen config['server']['port'], config['server']['address']
-console.log "Express server listening on port " + config['server']['port']
+logger.info "Express server listening on port", config['server']['port']
+

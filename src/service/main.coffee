@@ -70,6 +70,7 @@ github = require("./github")
 scheduler.initializeScheduler () ->
   github.update()
   logger.info("Running background task")
+require('./analysis')
 
 app.listen config['server']['port'], config['server']['address']
 logger.info "Express server listening on port", config['server']['port']

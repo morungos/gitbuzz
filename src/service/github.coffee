@@ -11,10 +11,46 @@ config = module.parent.exports.config
 ## Oh, I remember building one of those...
 
 https = require('https')
+mongo = require("mongodb")
+async = require("async")
+
+BSON = mongo.BSONPure
+MongoClient = mongo.MongoClient
 
 module.exports.update = () ->
-  requestUserEvents 'morungos', (err, events) ->
-    logger.debug "Done", err
+  url = config["data"]["datadb"]
+  users = config["github"]["users"]
+
+  MongoClient.connect url, (err, db) ->
+    return if err
+
+    db.collection "events", (err, events) ->
+      return done(err) if err?
+
+      done = (err) ->
+        logger.info "Closing database", err
+        db.close() if db?
+
+      handleUser = (user, userCallback) ->
+        logger.info "Calling handleUser", user
+
+        handleEventRecord = (eventRecord, eventCallback) ->
+          logger.info "Calling handleEventRecord", user
+          eventRecord['_id'] = eventRecord['id']
+          delete eventRecord['id']
+          events.save eventRecord, (err, result) ->
+            logger.info "Written database event record", err, result
+            eventCallback err
+
+        identifier = user.id
+        requestUserEvents user.id, (err, object) ->
+          if err?
+            done(err)
+          else
+            async.eachSeries object, handleEventRecord, userCallback
+
+      if !err
+        async.eachSeries users, handleUser, done
 
 requestUserEvents = (user, callback) ->
   options = {}

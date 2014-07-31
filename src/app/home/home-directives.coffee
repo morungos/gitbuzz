@@ -1,7 +1,7 @@
 angular
   .module 'webapp.home'
 
-  .directive 'buzzCommitsChart', () ->
+  .directive 'buzzRepositoryCommitsChart', () ->
     result =
       restrict: "A"
       replace: true
@@ -30,6 +30,11 @@ angular
               .size([chartWidth, chartHeight])
               .padding(1.5)
 
+            line1 = (text) ->
+              text.replace /(\/[^\/]+)$/, '/'
+            line2 = (text) ->
+              text.replace /^([^\/]+\/)/, ''
+
             classes = (nodes) ->
               result =
                 children: ({name: n.name, value: n.score} for n in nodes)
@@ -45,8 +50,16 @@ angular
               .attr("r", (d) -> d.r)
               .style("fill", (d) -> color(d.name))
 
-            nodes.append("text")
-              .attr("dy", ".3em")
-              .style("text-anchor", "middle")
+            text = nodes.append("text")
               .style("font-size", (d) -> d.r / 4)
-              .text((d) -> d.name)
+
+            text.append("tspan")
+              .attr("dy", "-.5em")
+              .attr("x", "0")
+              .style("text-anchor", "middle")
+              .text((d) -> line1(d.name))
+            text.append("tspan")
+              .attr("dy", "1.2em")
+              .attr("x", "0")
+              .style("text-anchor", "middle")
+              .text((d) -> line2(d.name))

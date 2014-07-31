@@ -11,6 +11,10 @@ angular.module 'morungos', [
       controller: 'HomeController'
       templateUrl: '/webapp/home/home.html'
       url: '/'
+    .state 'home.repository-by-commits',
+      templateUrl: '/webapp/displays/repository-by-commits.html'
+    .state 'home.user-by-commits',
+      templateUrl: '/webapp/displays/user-by-commits.html'
 
 .config Array '$locationProvider', ($locationProvider) ->
   $locationProvider.html5Mode(true)

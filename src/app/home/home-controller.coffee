@@ -1,7 +1,23 @@
 angular
   .module 'webapp.home'
-  .controller 'HomeController', Array '$scope', '$http', ($scope, $http) ->
+  .controller 'HomeController', Array '$scope', '$http', '$state', '$interval', ($scope, $http, $state, $interval) ->
     'use strict'
+
+    stateTable = [
+      'home.user-by-commits',
+      'home.repository-by-commits'
+    ]
+
+    currentStateIndex = 0
+
+    changeState = () ->
+      currentStateIndex = (currentStateIndex + 1) % stateTable.length
+      console.log "changeState", currentStateIndex
+      $state.transitionTo(stateTable[currentStateIndex])
+
+    $interval(changeState, 30000)
+
+    $state.transitionTo(stateTable[currentStateIndex])
 
     $scope.getData = (analysis, options, callback) ->
       $http {method: 'GET', url: "/api/#{analysis}"}

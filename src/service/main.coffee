@@ -66,7 +66,9 @@ if config['serveIndex']
 
 logger.info("Initializing scheduled tasks");
 scheduler = require("./scheduler")
+github = require("./github")
 scheduler.initializeScheduler () ->
+  github.update()
   logger.info("Running background task")
 
 app.listen config['server']['port'], config['server']['address']

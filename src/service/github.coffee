@@ -96,29 +96,43 @@ completeEvents = (db, limit, callback) ->
 
       logger.info "Found events in need of completion", err, docs.length
       return callback(err) if err?
-      statisticsCommands = []
+
+      statisticsCommands = {}
+      addStatisticsCommand = (command) ->
+        commandUrl = command.url
+        if ! statisticsCommands[commandUrl]?
+          command.queries = [command.query]
+          delete command.query
+          statisticsCommands[commandUrl] = command
+        else
+          statisticsCommands[commandUrl].queries.push command.query
 
       for doc in docs
-        statisticsCommands.push { "type" : "repoLanguages", "url" : doc.repo.url + "/languages", "query" : { 'repo.name' : doc.repo.name }, "updateField" : "repo.buzzLanguages" } unless doc.repo['buzzLanguages']?
+        addStatisticsCommand { "type" : "repoLanguages", "url" : doc.repo.url + "/languages", "query" : { 'repo.name' : doc.repo.name }, "updateField" : "repo.buzzLanguages" } unless doc.repo['buzzLanguages']?
         for commit in doc.payload.commits
-          statisticsCommands.push {"type" : "commit", "url" : commit.url, "query" : { 'payload.commits.sha' : commit.sha }, "updateField" : "payload.commits.$.buzzData" } unless commit['buzzData']?
+          addStatisticsCommand {"type" : "commit", "url" : commit.url, "query" : { 'payload.commits.sha' : commit.sha }, "updateField" : "payload.commits.$.buzzData" } unless commit['buzzData']?
 
       ## Here we have a fairly small set of commits we can test. These might be in the
       ## database, in which case we are good to go. Or we might need to complete them
       ## with a web request.
 
       db.collection "statistics", (err, statistics) ->
-        addStatistics = (request, statisticsCallback) ->
+        addStatistics = (requestUrl, statisticsCallback) ->
+          request = statisticsCommands[requestUrl]
           statisticsQuery = { "type": request.type, "_id": request.url }
           logger.debug "Looking for statistics", statisticsQuery
           statistics.findOne statisticsQuery, (err, doc) ->
             return callback(err) if (err)
 
-            updateDocument = (doc) ->
-              updater = {}
-              updater[request.updateField] = doc.buzzData
-              logger.info "Applying update", request.query, {"$set" : updater}
-              events.update request.query, {"$set" : updater}, {'multi': true}, (err, result) ->
+            updateDocuments = (doc) ->
+
+              updateDocumentQuery = (query, updateCallback) ->
+                updater = {}
+                updater[request.updateField] = doc.buzzData
+                logger.info "Applying update", query, {"$set" : updater}
+                events.update query, {"$set" : updater}, {'multi': true}, updateCallback
+
+              async.eachSeries request.queries, updateDocumentQuery, (err) ->
                 return callback(err) if (err)
                 statisticsCallback()
 
@@ -144,9 +158,10 @@ completeEvents = (db, limit, callback) ->
                 statisticsQuery['buzzData'] = buzzData
                 statistics.insert statisticsQuery, (err, result) ->
                   return callback(err) if (err)
-                  updateDocument(statisticsQuery)
+                  updateDocuments(statisticsQuery)
             else
-              updateDocument(doc)
+              updateDocuments(doc)
 
         logger.debug "About to handle statistics"
-        async.eachSeries statisticsCommands, addStatistics, callback
+        statisticsUrls = Object.keys statisticsCommands
+        async.eachSeries statisticsUrls, addStatistics, callback

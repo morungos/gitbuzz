@@ -9,6 +9,7 @@ angular
       'home.most-recent-commit',
       'home.user-by-commits',
       'home.repository-by-commits'
+      'home.teams'
     ]
 
     currentStateIndex = 0
@@ -18,7 +19,7 @@ angular
       console.log "changeState", currentStateIndex
       $state.transitionTo(stateTable[currentStateIndex])
 
-    $interval(changeState, 30000)
+    $interval(changeState, 20000)
 
     $state.transitionTo(stateTable[currentStateIndex])
 

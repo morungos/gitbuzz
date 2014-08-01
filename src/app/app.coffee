@@ -19,6 +19,10 @@ angular.module 'morungos', [
       templateUrl: '/webapp/displays/clock.html'
     .state 'home.most-recent-commit',
       templateUrl: '/webapp/displays/most-recent-commit.html'
+    .state 'home.award-winner',
+      templateUrl: '/webapp/displays/award-winner.html'
+    .state 'home.teams',
+      templateUrl: '/webapp/displays/teams.html'
 
 .config Array '$locationProvider', ($locationProvider) ->
   $locationProvider.html5Mode(true)

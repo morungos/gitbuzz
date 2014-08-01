@@ -92,3 +92,20 @@ app.get '/api/awardWinner', applicationMiddleware, (req, res) ->
       res.send 500, err
     else
       res.send {data: records}
+
+app.get '/api/teams', applicationMiddleware, (req, res) ->
+
+  pipeline = [
+    { $match : { type : 'PushEvent', 'repo.buzzLanguages.languages.Java' : { $exists: true } }},
+    { $unwind : "$payload.commits" },
+    { $unwind : "$buzzUser.teams" },
+    { $match : { "payload.commits.buzzData.stats.total" : { "$lt" : 1000 } }},
+    { $group : { _id : '$buzzUser.teams', commits: { $sum : 1}, lines : { $sum : '$payload.commits.buzzData.stats.total' }}},
+    { $sort : { "lines" : -1 }},
+  ]
+
+  res.locals.db.collection('events').aggregate pipeline, (err, records) ->
+    if err
+      res.send 500, err
+    else
+      res.send {data: records}

@@ -4,9 +4,10 @@ angular
     'use strict'
 
     stateTable = [
-      'home.clock'
+      'home.most-recent-commit',
       'home.user-by-commits',
       'home.repository-by-commits'
+      'home.clock'
     ]
 
     currentStateIndex = 0

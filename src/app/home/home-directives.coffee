@@ -1,11 +1,37 @@
 angular
   .module 'webapp.home'
 
+  .directive 'buzzMostRecentCommit', () ->
+    result =
+      replace: true
+      scope: false
+      template: '<div class="commit">' +
+                '  <img class="avatar" src=""></img>' +
+                '  <div class="repository"></div>' +
+                '  <div class="message"></div>' +
+                '  <div class="strapline">' +
+                '    <div class="user"></div>' +
+                '    <div class="date"></div>' +
+                '  </div>' +
+                '</div>'
+      link: (scope, iElement, iAttrs) ->
+        scope.getData 'mostRecentCommit', {}, (err, result) ->
+          if ! err?
+            message = result.data.payload.commits.message
+            user = result.data.actor.login
+            gravatar = result.data.actor.avatar_url
+            repository = result.data.repo.name
+            date = new Date(result.data.payload.commits.buzzData.date)
+            iElement.find(".avatar").attr('src', gravatar)
+            iElement.find(".repository").append(repository)
+            iElement.find(".message").append(message)
+            iElement.find(".user").append(user)
+            iElement.find(".date").append(date.toDateString() + ", " + date.toLocaleTimeString())
+
   .directive 'buzzRepositoryCommitsChart', () ->
     result =
       restrict: "A"
       replace: true
-      transclude: true
       scope: false
       template: '<div class="diagram"></div>'
       link: (scope, iElement, iAttrs) ->

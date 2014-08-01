@@ -17,6 +17,8 @@ angular.module 'morungos', [
       templateUrl: '/webapp/displays/user-by-commits.html'
     .state 'home.clock',
       templateUrl: '/webapp/displays/clock.html'
+    .state 'home.most-recent-commit',
+      templateUrl: '/webapp/displays/most-recent-commit.html'
 
 .config Array '$locationProvider', ($locationProvider) ->
   $locationProvider.html5Mode(true)

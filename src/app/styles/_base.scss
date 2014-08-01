@@ -6,3 +6,50 @@
   display:inline-block;
 }
 
+.commit {
+  width: 48em;
+  -webkit-transition: -webkit-transform 2s;
+  -webkit-transform: translate(200px, 100px);
+  transition:transform 2s;
+  transform:translate(200px, 100px);
+}
+
+.commit .avatar {
+  width: 128px;
+  height: 128px;
+  float: left;
+  margin-right: 10px;
+}
+
+.commit .message {
+  font-size: 4.2ex;
+  text-align: left;
+}
+
+.commit .repository {
+  font-size: 2.5ex;
+  text-align: left;
+}
+.commit .strapline {
+  font-size: 3ex;
+}
+
+.commit .user, .commit .date {
+  display: inline;
+}
+
+.commit .user {
+  font-weight: bold;
+}
+
+.commit .strapline {
+  text-align: right;
+}
+
+.commit .user::before  {
+  content: "by ";
+  font-weight: normal;
+}
+.commit .date::before  {
+  content: " on ";
+}

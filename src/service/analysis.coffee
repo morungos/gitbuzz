@@ -55,3 +55,17 @@ app.get '/api/commitsByRepository', applicationMiddleware, (req, res) ->
       res.send 500, err
     else
       res.send {data: records}
+
+app.get '/api/mostRecentCommit', applicationMiddleware, (req, res) ->
+  pipeline = [
+    { $match : { type : 'PushEvent' }},
+    { $unwind : "$payload.commits" },
+    { $sort : { 'payload.commits.buzzData.date' : -1}},
+    { $limit : 1 }
+  ]
+
+  res.locals.db.collection('events').aggregate pipeline, (err, records) ->
+    if err
+      res.send 500, err
+    else
+      res.send {data: records[0]}

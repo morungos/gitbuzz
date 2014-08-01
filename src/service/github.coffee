@@ -94,23 +94,24 @@ completeEvents = (db, limit, callback) ->
     events.find({'type': 'PushEvent', '$or': [{"payload.commits.buzzData" : {"$exists": false}}, {"repo.buzzLanguages" : {"$exists": false}}]},
                 {"limit": limit}).toArray (err, docs) ->
 
-      logger.info "Found events in need of completion", err, docs.length
       return callback(err) if err?
 
       statisticsCommands = {}
       addStatisticsCommand = (command) ->
         commandUrl = command.url
         if ! statisticsCommands[commandUrl]?
-          command.queries = [command.query]
-          delete command.query
           statisticsCommands[commandUrl] = command
-        else
-          statisticsCommands[commandUrl].queries.push command.query
 
       for doc in docs
+        logger.info doc['_id'], doc.repo.url, doc.repo
         addStatisticsCommand { "type" : "repoLanguages", "url" : doc.repo.url + "/languages", "query" : { 'repo.name' : doc.repo.name }, "updateField" : "repo.buzzLanguages" } unless doc.repo['buzzLanguages']?
         for commit in doc.payload.commits
           addStatisticsCommand {"type" : "commit", "url" : commit.url, "query" : { 'payload.commits.sha' : commit.sha }, "updateField" : "payload.commits.$.buzzData" } unless commit['buzzData']?
+
+      logger.info "Gathering statistics"
+      for own key, value of statisticsCommands
+        logger.info "KEY: #{key}"
+
 
       ## Here we have a fairly small set of commits we can test. These might be in the
       ## database, in which case we are good to go. Or we might need to complete them
@@ -125,16 +126,10 @@ completeEvents = (db, limit, callback) ->
             return callback(err) if (err)
 
             updateDocuments = (doc) ->
-
-              updateDocumentQuery = (query, updateCallback) ->
-                updater = {}
-                updater[request.updateField] = doc.buzzData
-                logger.info "Applying update", query, {"$set" : updater}
-                events.update query, {"$set" : updater}, {'multi': true}, updateCallback
-
-              async.eachSeries request.queries, updateDocumentQuery, (err) ->
-                return callback(err) if (err)
-                statisticsCallback()
+              updater = {}
+              updater[request.updateField] = doc.buzzData
+              logger.info "Applying update", request.query, {"$set" : updater}
+              events.update request.query, {"$set" : updater}, {'multi': true}, statisticsCallback
 
             if ! doc?
               if limit-- == 0
@@ -142,6 +137,12 @@ completeEvents = (db, limit, callback) ->
               parsed = url.parse request.url
               logger.debug "Starting request", parsed
               requestData parsed.path, (err, data) ->
+
+                ## Special case -- 404 is just plain missing
+                if err == 404
+                  err = null
+                  data = {}
+
                 return callback(err) if (err)
 
                 ## Build the statistics we need. This depends a bit on the kind
@@ -153,7 +154,7 @@ completeEvents = (db, limit, callback) ->
                     buzzData['languages'] = data
                   when 'commit'
                     buzzData['stats'] = data.stats
-                    buzzData['date'] = data.commit.committer.date
+                    buzzData['date'] = data.commit?.committer?.date
 
                 statisticsQuery['buzzData'] = buzzData
                 statistics.insert statisticsQuery, (err, result) ->

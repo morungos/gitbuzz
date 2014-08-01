@@ -11,10 +11,11 @@ schedule = require('node-schedule')
 dateUtils = require('date-utils')
 
 module.exports.initializeScheduler = (callback) ->
+  callback()
 
-  stop = (err) ->
-    logger.error "Scheduler error", err
+  # stop = (err) ->
+  #   logger.error "Scheduler error", err
 
-  job = schedule.scheduleJob config['schedule']['cron'], () ->
-    callback()
-    logger.info "Scheduled tasks completed"
+  # job = schedule.scheduleJob config['schedule']['cron'], () ->
+  #   callback()
+  #   logger.info "Scheduled tasks completed"

@@ -64,12 +64,14 @@ if config['serveIndex']
       res.setHeader 'Cache-Control', 'public, max-age=0'
     res.sendfile(file)
 
-logger.info("Initializing scheduled tasks");
 scheduler = require("./scheduler")
 github = require("./github")
+
+logger.info("Initializing scheduled tasks");
 scheduler.initializeScheduler () ->
   github.update()
   logger.info("Running background task")
+
 require('./analysis')
 
 app.listen config['server']['port'], config['server']['address']

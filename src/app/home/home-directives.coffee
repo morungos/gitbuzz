@@ -40,7 +40,6 @@ angular
       replace: true
       scope: false
       template: '<div class="commit">' +
-                '  <h3>Most recent commit</h3>' +
                 '  <img class="avatar" src=""></img>' +
                 '  <div class="repository"></div>' +
                 '  <div class="message"></div>' +

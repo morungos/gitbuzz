@@ -1,11 +1,46 @@
 angular
   .module 'webapp.home'
 
+  .directive 'buzzAwardWinner', () ->
+    result =
+      replace: true
+      scope: false
+      template: '<div class="awards">' +
+                '<h2><span class="languageKey"></span> award: &#8220;<span class="languageDescription"></span>&#8221;</h3>' +
+                '<div class="awards-winners"></div>' +
+                '</div>'
+      link: (scope, iElement, iAttrs) ->
+        languages =
+          "Java": "Classpath Champions",
+          "Perl": "Sigil Ninjas",
+          "JavaScript": "Prototype Virtuosi"
+        languageKeys = Object.keys languages
+        selectedLanguage = languageKeys[Math.floor(Math.random() * languageKeys.length)]
+        iElement.find(".languageKey").append(selectedLanguage)
+        iElement.find(".languageDescription").append(languages[selectedLanguage])
+
+        labels = [
+          "award-gold",
+          "award-silver",
+          "award-bronze"
+        ]
+
+        scope.getData 'awardWinner', {language: selectedLanguage}, (err, result) ->
+          if ! err?
+
+            for entry, i in result.data
+              icon = "<div class='award-icon #{labels[i]}'><span class='glyphicon glyphicon-star'></span></div>"
+              name = "<div class='award-name'>#{entry._id}</div>"
+              explanation = "<div class='award-justification'>#{entry.lines} lines in #{entry.commits} commits</div>"
+              element = angular.element "<div class='award'>#{icon} #{name} #{explanation}</div>"
+              iElement.find(".awards-winners").append(element)
+
   .directive 'buzzMostRecentCommit', () ->
     result =
       replace: true
       scope: false
       template: '<div class="commit">' +
+                '  <h3>Most recent commit</h3>' +
                 '  <img class="avatar" src=""></img>' +
                 '  <div class="repository"></div>' +
                 '  <div class="message"></div>' +

@@ -4,10 +4,11 @@ angular
     'use strict'
 
     stateTable = [
+      'home.clock'
+      'home.award-winner',
       'home.most-recent-commit',
       'home.user-by-commits',
       'home.repository-by-commits'
-      'home.clock'
     ]
 
     currentStateIndex = 0
@@ -22,7 +23,7 @@ angular
     $state.transitionTo(stateTable[currentStateIndex])
 
     $scope.getData = (analysis, options, callback) ->
-      $http {method: 'GET', url: "/api/#{analysis}"}
+      $http {method: 'GET', url: "/api/#{analysis}", params: options}
         .success (data, status, headers, config) ->
           callback null, data
         .error (data, status, headers, config) ->

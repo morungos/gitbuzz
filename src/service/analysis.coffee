@@ -69,3 +69,26 @@ app.get '/api/mostRecentCommit', applicationMiddleware, (req, res) ->
       res.send 500, err
     else
       res.send {data: records[0]}
+
+app.get '/api/awardWinner', applicationMiddleware, (req, res) ->
+  logger.info req.query['language']
+
+  return res.status(500).send("Missing language") if ! req.query['language']?
+
+  match = {}
+  match['type'] = 'PushEvent'
+  match['repo.buzzLanguages.languages.' + req.query['language']] = { $exists: true }
+  pipeline = [
+    { $match : match},
+    { $unwind : "$payload.commits" },
+    { $match : { "payload.commits.buzzData.stats.total" : { "$lt" : 1000 } }},
+    { $group : { _id : '$actor.login', commits: { $sum : 1}, lines : { $sum : '$payload.commits.buzzData.stats.total' }}},
+    { $sort : { "lines" : -1 }},
+    { $limit : 3}
+  ]
+
+  res.locals.db.collection('events').aggregate pipeline, (err, records) ->
+    if err
+      res.send 500, err
+    else
+      res.send {data: records}

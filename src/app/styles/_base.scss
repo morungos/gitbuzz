@@ -53,3 +53,48 @@
 .commit .date::before  {
   content: " on ";
 }
+
+.award-icon {
+  font-size: 48pt;
+  float: left;
+  margin-right: 20px;
+}
+
+.award {
+  display: block;
+  clear: both;
+  width: 24em;
+}
+
+.award-name {
+  padding-top: 0.3em;
+  font-size: 2em;
+  text-align: left;
+  font-weight: bold;
+}
+
+.award-justification {
+  text-align: right;
+}
+
+.award-gold {
+  color: #FFD700;
+}
+
+.award-silver {
+  color: #C0C0C0;
+}
+
+.award-bronze {
+  color: #cd7f32;
+}
+
+.awards-winners {
+  margin-left: auto;
+  margin-right: auto;
+  display: inline-block;
+}
+
+.awards h2 {
+  margin-bottom: 2em;
+}

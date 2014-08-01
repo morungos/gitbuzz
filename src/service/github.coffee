@@ -30,7 +30,7 @@ module.exports.update = () ->
       return done(err) if err?
 
       done = (err) ->
-        logger.info "Closing database", err
+        # logger.info "Closing database", err
         db.close() if db?
 
       pendingUpdates = (err) ->
@@ -41,11 +41,12 @@ module.exports.update = () ->
         logger.info "Calling handleUser", user
 
         handleEventRecord = (eventRecord, eventCallback) ->
-          logger.info "Calling handleEventRecord", user
-          eventRecord['_id'] = eventRecord['id']
+          # logger.info "Calling handleEventRecord", user
+          eventRecordIdentifier = eventRecord['id']
           delete eventRecord['id']
-          events.save eventRecord, (err, result) ->
-            logger.info "Written database event record", err, result
+##          eventRecord['buzzUser'] = user
+          events.update {_id: eventRecordIdentifier}, {'$setOnInsert' : eventRecord, '$set': {'buzzUser' : user}}, {upsert: true}, (err, result) ->
+            # logger.info "Written database event record", err, result, eventRecord.repo
             eventCallback err
 
         identifier = user.id
@@ -88,81 +89,79 @@ requestData = (path, callback) ->
 requestUserEvents = (user, callback) ->
   requestData "/users/#{user}/events", callback
 
-completeEvents = (db, limit, callback) ->
-  logger.debug "About to start completing events"
-  db.collection "events", (err, events) ->
-    events.find({'type': 'PushEvent', '$or': [{"payload.commits.buzzData" : {"$exists": false}}, {"repo.buzzLanguages" : {"$exists": false}}]},
-                {"limit": limit}).toArray (err, docs) ->
+updateEvents = (db, events, statisticsCommands, limit, callback) ->
+  db.collection "statistics", (err, statistics) ->
+    addStatistics = (requestUrl, statisticsCallback) ->
+      request = statisticsCommands[requestUrl]
+      statisticsQuery = { "type": request.type, "_id": request.url }
+      logger.debug "Looking for statistics", statisticsQuery
+      statistics.findOne statisticsQuery, (err, doc) ->
+        return callback(err) if (err)
 
-      return callback(err) if err?
+        updateDocuments = (doc) ->
+          updater = {}
+          updater[request.updateField] = doc.buzzData
+          logger.info "Applying update", request.query, {"$set" : updater}
+          events.update request.query, {"$set" : updater}, {'multi': true}, (err, result) ->
+            logger.info "Processed update", err, result
+            statisticsCallback(err)
 
-      statisticsCommands = {}
-      addStatisticsCommand = (command) ->
-        commandUrl = command.url
-        if ! statisticsCommands[commandUrl]?
-          statisticsCommands[commandUrl] = command
+        if ! doc?
+          if limit-- == 0
+            return callback('Exceeded request limit')
+          parsed = url.parse request.url
+          logger.debug "Starting request", parsed
+          requestData parsed.path, (err, data) ->
 
-      for doc in docs
-        logger.info doc['_id'], doc.repo.url, doc.repo
-        addStatisticsCommand { "type" : "repoLanguages", "url" : doc.repo.url + "/languages", "query" : { 'repo.name' : doc.repo.name }, "updateField" : "repo.buzzLanguages" } unless doc.repo['buzzLanguages']?
-        for commit in doc.payload.commits
-          addStatisticsCommand {"type" : "commit", "url" : commit.url, "query" : { 'payload.commits.sha' : commit.sha }, "updateField" : "payload.commits.$.buzzData" } unless commit['buzzData']?
+            ## Special case -- 404 is just plain missing
+            if err == 404
+              err = null
+              data = {}
 
-      logger.info "Gathering statistics"
-      for own key, value of statisticsCommands
-        logger.info "KEY: #{key}"
-
-
-      ## Here we have a fairly small set of commits we can test. These might be in the
-      ## database, in which case we are good to go. Or we might need to complete them
-      ## with a web request.
-
-      db.collection "statistics", (err, statistics) ->
-        addStatistics = (requestUrl, statisticsCallback) ->
-          request = statisticsCommands[requestUrl]
-          statisticsQuery = { "type": request.type, "_id": request.url }
-          logger.debug "Looking for statistics", statisticsQuery
-          statistics.findOne statisticsQuery, (err, doc) ->
             return callback(err) if (err)
 
-            updateDocuments = (doc) ->
-              updater = {}
-              updater[request.updateField] = doc.buzzData
-              logger.info "Applying update", request.query, {"$set" : updater}
-              events.update request.query, {"$set" : updater}, {'multi': true}, statisticsCallback
+            ## Build the statistics we need. This depends a bit on the kind
+            ## of data we are after.
 
-            if ! doc?
-              if limit-- == 0
-                return callback('Exceeded request limit')
-              parsed = url.parse request.url
-              logger.debug "Starting request", parsed
-              requestData parsed.path, (err, data) ->
+            buzzData = {}
+            switch request.type
+              when 'repoLanguages'
+                buzzData['languages'] = data
+              when 'commit'
+                buzzData['stats'] = data.stats
+                buzzData['date'] = data.commit?.committer?.date
 
-                ## Special case -- 404 is just plain missing
-                if err == 404
-                  err = null
-                  data = {}
+            statisticsQuery['buzzData'] = buzzData
+            statistics.insert statisticsQuery, (err, result) ->
+              return callback(err) if (err)
+              updateDocuments(statisticsQuery)
+        else
+          updateDocuments(doc)
 
-                return callback(err) if (err)
+    logger.debug "About to handle statistics"
+    statisticsUrls = Object.keys statisticsCommands
+    async.eachSeries statisticsUrls, addStatistics, callback
 
-                ## Build the statistics we need. This depends a bit on the kind
-                ## of data we are after.
+completeEvents = (db, limit, callback) ->
+  logger.debug "About to start completing events"
 
-                buzzData = {}
-                switch request.type
-                  when 'repoLanguages'
-                    buzzData['languages'] = data
-                  when 'commit'
-                    buzzData['stats'] = data.stats
-                    buzzData['date'] = data.commit?.committer?.date
+  statisticsCommands = {}
+  addStatisticsCommand = (command) ->
+    commandUrl = command.url
+    if ! statisticsCommands[commandUrl]?
+      statisticsCommands[commandUrl] = command
 
-                statisticsQuery['buzzData'] = buzzData
-                statistics.insert statisticsQuery, (err, result) ->
-                  return callback(err) if (err)
-                  updateDocuments(statisticsQuery)
-            else
-              updateDocuments(doc)
+  db.collection "events", (err, events) ->
+    events.find({'type': 'PushEvent', "repo.buzzLanguages" : {"$exists": false}}, {"limit": limit}).toArray (err, docs) ->
+      return callback(err) if err?
+      for doc in docs
+        addStatisticsCommand { "type" : "repoLanguages", "url" : doc.repo.url + "/languages", "query" : { 'repo.name' : doc.repo.name }, "updateField" : "repo.buzzLanguages" }
 
-        logger.debug "About to handle statistics"
-        statisticsUrls = Object.keys statisticsCommands
-        async.eachSeries statisticsUrls, addStatistics, callback
+      events.find({'type': 'PushEvent', "payload.commits.buzzData" : {"$exists": false}}, {"limit": limit}).toArray (err, docs) ->
+        return callback(err) if err?
+        for doc in docs
+          for commit in doc.payload.commits
+            addStatisticsCommand {"type" : "commit", "url" : commit.url, "query" : { 'payload.commits.sha' : commit.sha }, "updateField" : "payload.commits.$.buzzData" } unless commit['buzzData']?
+
+        updateEvents db, events, statisticsCommands, limit, callback
+

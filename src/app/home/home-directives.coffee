@@ -57,7 +57,6 @@ angular
                 .text((d) -> d.name)
 
 
-
 bubbleChart = (iElement, nodes, labeller) ->
   display = jQuery(iElement)
   element = display.get()[0]
@@ -85,8 +84,9 @@ bubbleChart = (iElement, nodes, labeller) ->
     .attr("transform", (d) -> "translate(#{d.x},#{d.y})")
 
   nodes.append("circle")
-    .attr("r", (d) -> d.r)
+    .attr("r", 0)
     .style("fill", (d) -> color(d.name))
+    .transition().duration(500).attr("r", (d) -> d.r)
 
   text = nodes.append("text")
     .style("font-size", (d) -> d.r / 4)

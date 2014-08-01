@@ -130,7 +130,6 @@ angular
         drawClock()
 
         intervalFunction = () ->
-          console.log "Tick"
           updateData()
           moveHands()
 

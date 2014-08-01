@@ -109,3 +109,36 @@ app.get '/api/teams', applicationMiddleware, (req, res) ->
       res.send 500, err
     else
       res.send {data: records}
+
+app.get '/api/issues', applicationMiddleware, (req, res) ->
+
+  pipeline = [
+    { $match : { type : 'IssuesEvent' }},
+    { $sort : { "created_at" : -1 }},
+    { $limit : 3}
+  ]
+
+  res.locals.db.collection('events').aggregate pipeline, (err, records) ->
+    if err
+      res.send 500, err
+    else
+      res.send {data: records}
+
+
+app.get '/api/byDay', applicationMiddleware, (req, res) ->
+
+  pipeline = [
+    { $match : { type : 'PushEvent' }},
+    { $unwind : "$payload.commits" },
+    { $match : { "payload.commits.buzzData.stats.total" : { "$lt" : 1000 } }},
+    { $group : { _id : { $substr : [ '$payload.commits.buzzData.date', 0, 10 ]}, commits: { $sum : 1}, lines : { $sum : '$payload.commits.buzzData.stats.total' }}},
+    { $sort : { "_id" : -1 }},
+    { $limit : 7 }
+  ]
+
+  res.locals.db.collection('events').aggregate pipeline, (err, records) ->
+    if err
+      res.send 500, err
+    else
+      res.send {data: records}
+

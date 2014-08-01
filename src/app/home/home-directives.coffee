@@ -172,6 +172,75 @@ angular
               .transition().duration(2000).attr("x", (d) -> x(d.commits) - 3)
 
 
+  .directive 'buzzDayChart', () ->
+    result =
+      restrict: "A"
+      replace: true
+      transclude: true
+      scope: false
+      template: '<div class="diagram"></div>'
+      link: (scope, iElement, iAttrs) ->
+        scope.getData 'byDay', {}, (err, result) ->
+
+          if ! err?
+            display = jQuery(iElement)
+            element = display.get()[0]
+
+            chartWidth = 640
+            chartHeight = 650
+            barHeight = 50
+            textMargin = 100
+
+            color = d3.scale.category20c()
+
+            x = d3.scale.linear()
+              .range([0, chartWidth - textMargin])
+
+            x.domain([0, d3.max(result.data, (d) -> d.lines)])
+
+            svg = d3.select(element)
+              .append("svg")
+              .attr("width", chartWidth)
+              .attr("height", chartHeight)
+              .attr("class", "bar")
+
+            svg.attr("height", barHeight * result.data.length)
+
+            bar = svg.selectAll("g")
+              .data(result.data)
+              .enter()
+              .append("g")
+              .attr("transform", (d, i) -> "translate(0," + i * barHeight + ")")
+
+            bar.append("rect")
+              .attr("width", 0)
+              .attr("height", barHeight - 1)
+              .style("fill", (d, i) -> color(i))
+              .transition().duration(2000).attr("width", (d) -> x(d.lines))
+
+            dayNames = [
+              "Sunday",
+              "Monday",
+              "Tuesday",
+              "Wednesday",
+              "Thursday",
+              "Friday",
+              "Saturday"
+            ]
+
+            dayLabel = (string) ->
+              date = new Date(string)
+              date.toLocaleDateString()
+
+            bar.append("text")
+              .attr("x", -3)
+              .attr("y", barHeight / 2)
+              .attr("dy", ".35em")
+              .attr("dx", "0.5em")
+              .text((d) -> dayLabel(d._id))
+              .transition().duration(2000).attr("x", (d) -> x(d.lines) - 3)
+
+
 bubbleChart = (iElement, nodes, labeller) ->
   display = jQuery(iElement)
   element = display.get()[0]

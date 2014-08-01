@@ -15,7 +15,7 @@
   <body role="document">
 
     <!-- Fixed navbar -->
-    <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+    <div class="navbar navbar-fixed-top" role="navigation">
       <div class="container">
         <div class="navbar-header">
           <a ng-init="navCollapsed = true" ng-click="navCollapsed = !navCollapsed" type="button" class="navbar-toggle">
@@ -26,11 +26,7 @@
           </a>
           <a class="navbar-brand" href="/">Gitbuzz</a>
         </div>
-        <div collapse="navCollapsed" class="navbar-collapse collapse">
-          <ul class="nav navbar-nav">
-            <li ng-class="{ active: isActive('/')}"><a href="/">Home</a></li>
-          </ul>
-        </div><!--/.nav-collapse -->
+        <span class="navbar-brand"><span class="trailer small">Proudly brought to you by OICR's Informatics and Biocomputing CLIC day</span></span>
       </div>
     </div>
 

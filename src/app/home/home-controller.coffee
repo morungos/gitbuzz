@@ -4,6 +4,7 @@ angular
     'use strict'
 
     stateTable = [
+      'home.clock'
       'home.user-by-commits',
       'home.repository-by-commits'
     ]

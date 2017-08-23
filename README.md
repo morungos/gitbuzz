@@ -1,5 +1,4 @@
-Gitbuzz
-=======
+## Gitbuzz
 
 A Github activity visualization app for teams and groups
 
@@ -21,7 +20,7 @@ You'll also need a config file that looks a bit like this:
 
 The long hexadecimal string is the token assigned by Github for
 this application. Get one from Github under Settings >
-Applications > Personal access tokens. 
+Applications > Personal access tokens.
 
 ```javascript
 {
@@ -45,7 +44,12 @@ Applications > Personal access tokens.
 }
 ```
 
-Todo:
+### Sample video
+
+[This video](https://www.dropbox.com/s/pcsxqbp6e0vmida/gitbuzz-clipped.mov?dl=0) shows what a deployed system looks like when showing data for a small team. 
+
+
+### Todo
 
  * Testing - a lot
  * Commenting - almost as much
